@@ -9,11 +9,6 @@ from nltk.stem import WordNetLemmatizer
 # import nltk
 # nltk.download('all')
 
-# get user input
-one = input("Explain the first choice: ")
-two = input("Explain the second choice: ")
-
-
 def preprocess_text(text):
     '''function for preprocessing text'''
   
@@ -32,10 +27,6 @@ def preprocess_text(text):
 
     return processed_text
 
-# apply the function on the inputs
-one_processed = preprocess_text(one)
-two_processed = preprocess_text(two)
-
 # initialize NLTK sentiment analyzer
 analyzer = SentimentIntensityAnalyzer()
 
@@ -46,9 +37,27 @@ def get_sentiment(text):
 
     return scores['compound']
 
-# apply get_sentiment function
-one_sentiment = get_sentiment(one_processed)
-two_sentiment = get_sentiment(two_processed)
+# get user input and place into a dictionary with key being title and value being description
+choices = {}
+while True:
+    choice = input("Describe a choice (or type 'NIL' to finish): ")
+    if choice == 'NIL':
+        break
+    description = input("Enter your thought about this choice (pros and cons): ")
+    choices[choice] = description
 
-print("First choice: " + str(one_sentiment))
-print("Second choice: " + str(two_sentiment))
+# preprocess the text descriptions
+for choice in choices:
+    choices[choice] = preprocess_text(choices[choice])
+
+# replace descriptions with sentiment scores
+for choice in choices:
+    choices[choice] = get_sentiment(choices[choice])
+
+# sort the choices by sentiment score in descending order
+choices = dict(sorted(choices.items(), key=lambda item: item[1], reverse=True))
+
+# print the sentiment scores
+print("Choices ranked by how positive your thoughts about them are from -1 to 1:")
+for i, choice in enumerate(choices, 1):
+    print(f"{i}. {choice}: {choices[choice]}")
