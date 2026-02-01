@@ -1,56 +1,48 @@
-'''Program to analyse the sentiment of 2 choices and compare which has a more positive sentiment'''
+'''Program to analyse the sentiment of multiple choices using ML-based sentiment analysis'''
 
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
+import warnings
+from transformers import pipeline
 
-# uncomment the next 2 lines for the first run of the program
-# import nltk
-# nltk.download('all')
-
-def preprocess_text(text):
-    '''function for preprocessing text'''
-  
-    # tokenize
-    tokens = word_tokenize(text.lower())
-
-    # remove stop words
-    filtered_tokens = [token for token in tokens if token not in stopwords.words('english')]
-
-    # lemmatize the tokens
-    lemmatizer = WordNetLemmatizer()
-    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
-
-    # join the tokens into a string
-    processed_text = ' '.join(lemmatized_tokens)
-
-    return processed_text
-
-# initialize NLTK sentiment analyzer
-analyzer = SentimentIntensityAnalyzer()
+# Suppress warnings for cleaner output
+warnings.filterwarnings('ignore')
 
 def get_sentiment(text):
-    '''function to get the sentiment of a string'''
-    
-    scores = analyzer.polarity_scores(text)
+    '''Function to get the sentiment intensity score of a string using ML model'''
 
-    return scores['compound']
+    # Get predictions from the model
+    results = analyzer(text)[0]
+    print(results)
+
+    # Extract individual scores
+    negative_score = next(item['score'] for item in results if item['label'] == 'negative')
+    positive_score = next(item['score'] for item in results if item['label'] == 'positive')
+
+    # Calculate compound score between -1 and 1
+    compound_score = positive_score - negative_score
+
+    return compound_score
+
+# Initialize sentiment analyzer (uses RoBERTa model)
+print("Loading sentiment analysis model...")
+analyzer = pipeline(
+    "sentiment-analysis",
+    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+    device=-1,  # Use CPU; change to 0 for GPU if available
+    top_k=None  # Get probabilities for all sentiment classes
+)
+print("Model loaded successfully!\n")
 
 # get user input and place into a dictionary with key being title and value being description
 choices = {}
 while True:
-    choice = input("Describe a choice (or type 'NIL' to finish): ")
-    if choice == 'NIL':
+    choice = input("\nDescribe a choice (or press ENTER to finish): ")
+    if choice == '':
         break
     description = input("Enter your thought about this choice (pros and cons): ")
     choices[choice] = description
 
-# preprocess the text descriptions
-for choice in choices:
-    choices[choice] = preprocess_text(choices[choice])
-
-# replace descriptions with sentiment scores
+# calculate sentiment scores using ML model
+print("\nAnalyzing sentiment...")
 for choice in choices:
     choices[choice] = get_sentiment(choices[choice])
 
